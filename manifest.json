@@ -1,0 +1,146 @@
+{
+  "name": "Smart Inventory & Logistics Management System",
+  "version": "1.0.0",
+  "description": "Enterprise-grade inventory and logistics management system",
+  "author": "Smart Inventory Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/smart-inventory-system"
+  },
+  "homepage": "https://your-domain.com",
+  "bugs": {
+    "url": "https://github.com/your-org/smart-inventory-system/issues"
+  },
+  "keywords": [
+    "inventory",
+    "logistics",
+    "management",
+    "nextjs",
+    "react",
+    "typescript",
+    "tailwindcss",
+    "prisma",
+    "postgresql"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "features": [
+    "Authentication & Authorization",
+    "Role-based Access Control",
+    "Inventory Management",
+    "Consumables Tracking",
+    "Request Workflow",
+    "User Management",
+    "Department Management",
+    "Reports & Analytics",
+    "Notifications",
+    "Audit Logging",
+    "File Uploads",
+    "QR Code Support",
+    "Excel/PDF Export",
+    "Dark Mode",
+    "Responsive Design",
+    "Command Palette",
+    "Keyboard Shortcuts",
+    "Docker Support"
+  ],
+  "pages": [
+    "/dashboard",
+    "/inventory",
+    "/inventory/new",
+    "/inventory/[id]",
+    "/consumables",
+    "/consumables/new",
+    "/consumables/[id]",
+    "/requests",
+    "/requests/new",
+    "/requests/[id]",
+    "/users",
+    "/departments",
+    "/reports",
+    "/export",
+    "/system-status",
+    "/audit-logs",
+    "/settings",
+    "/notifications",
+    "/profile",
+    "/login",
+    "/register"
+  ],
+  "apiRoutes": [
+    "/api/auth/[...nextauth]",
+    "/api/register",
+    "/api/dashboard",
+    "/api/stats",
+    "/api/health",
+    "/api/search",
+    "/api/inventory",
+    "/api/inventory/[id]",
+    "/api/consumables",
+    "/api/consumables/[id]",
+    "/api/requests",
+    "/api/requests/[id]",
+    "/api/users",
+    "/api/departments",
+    "/api/departments/[id]",
+    "/api/reports",
+    "/api/stock-movements",
+    "/api/audit-logs",
+    "/api/notifications",
+    "/api/upload",
+    "/api/settings",
+    "/api/backup",
+    "/api/import",
+    "/api/alerts"
+  ],
+  "databaseTables": [
+    "users",
+    "accounts",
+    "sessions",
+    "verification_tokens",
+    "departments",
+    "inventory_items",
+    "inventory_assignments",
+    "inventory_documents",
+    "consumable_items",
+    "stock_movements",
+    "consumable_requests",
+    "request_attachments",
+    "notifications",
+    "audit_logs"
+  ],
+  "userRoles": [
+    {
+      "name": "ADMIN",
+      "description": "Full system access",
+      "permissions": ["all"]
+    },
+    {
+      "name": "MODERATOR",
+      "description": "Inventory and request management",
+      "permissions": [
+        "read_inventory",
+        "write_inventory",
+        "read_consumables",
+        "write_consumables",
+        "read_requests",
+        "write_requests",
+        "read_reports",
+        "write_reports"
+      ]
+    },
+    {
+      "name": "USER",
+      "description": "View items and submit requests",
+      "permissions": [
+        "read_inventory",
+        "read_consumables",
+        "read_requests",
+        "write_requests"
+      ]
+    }
+  ]
+}

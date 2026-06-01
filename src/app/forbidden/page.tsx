@@ -1,0 +1,26 @@
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Shield, ArrowLeft } from "lucide-react";
+
+export default function ForbiddenPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center max-w-md px-4">
+        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Shield className="h-10 w-10 text-red-600" />
+        </div>
+        <h1 className="text-6xl font-bold text-gray-900 mb-4">403</h1>
+        <h2 className="text-2xl font-semibold text-gray-700 mb-2">Access Forbidden</h2>
+        <p className="text-gray-500 mb-8">
+          You don&apos;t have permission to access this page. Please contact your administrator if you believe this is an error.
+        </p>
+        <Link href="/dashboard">
+          <Button>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
