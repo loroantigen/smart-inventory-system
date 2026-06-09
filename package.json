@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
@@ -23,6 +23,7 @@
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
+    "postinstall": "prisma generate",
     "cron:alerts": "node scripts/cron-alerts.js",
     "backup": "node scripts/backup.js"
   },
