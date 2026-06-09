@@ -13,15 +13,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -38,31 +37,27 @@ model Session {
 }
 
 model User {
-  id            String     @id @default(cuid())
-  name          String?
-  email         String     @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          Role       @default(USER)
-  status        UserStatus @default(PENDING)
-  departmentId  String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  deletedAt     DateTime?
-
-  accounts      Account[]
-  sessions      Session[]
-  department    Department? @relation(fields: [departmentId], references: [id])
-
-  assignedItems    InventoryAssignment[]
-  createdRequests  ConsumableRequest[]   @relation("CreatedRequests")
-  approvedRequests ConsumableRequest[]   @relation("ApprovedRequests")
-  auditLogs        AuditLog[]
-  notifications    Notification[]
-  stockMovements   StockMovement[]
-
-  // ✅ NEW: User consumable inventory relations
+  id                  String                    @id @default(cuid())
+  name                String?
+  email               String                    @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?
+  role                Role                      @default(USER)
+  status              UserStatus                @default(PENDING)
+  departmentId        String?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  deletedAt           DateTime?
+  accounts            Account[]
+  auditLogs           AuditLog[]
+  approvedRequests    ConsumableRequest[]       @relation("ApprovedRequests")
+  createdRequests     ConsumableRequest[]       @relation("CreatedRequests")
+  assignedItems       InventoryAssignment[]
+  notifications       Notification[]
+  sessions            Session[]
+  stockMovements      StockMovement[]
+  department          Department?               @relation(fields: [departmentId], references: [id])
   consumableInventory UserConsumableInventory[]
   distributions       UserDistribution[]
 
@@ -80,45 +75,43 @@ model VerificationToken {
 }
 
 model Department {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  code        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  users           User[]
-  inventoryItems  InventoryItem[]
+  id              String           @id @default(cuid())
+  name            String           @unique
+  code            String           @unique
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   consumableItems ConsumableItem[]
+  inventoryItems  InventoryItem[]
+  users           User[]
 }
 
 model InventoryItem {
-  id                 String          @id @default(cuid())
-  propertyNumber     String          @unique
+  id                 String                @id @default(cuid())
+  propertyNumber     String                @unique
   itemName           String
   description        String?
   category           ItemCategory
   brand              String?
   model              String?
-  serialNumber       String?         @unique
+  serialNumber       String?               @unique
   departmentId       String?
   assignedUserId     String?
   fundCode           String?
   fundSource         String?
   supplier           String?
   purchaseDate       DateTime?
-  purchaseCost       Decimal?        @db.Decimal(10, 2)
+  purchaseCost       Decimal?              @db.Decimal(10, 2)
   warrantyExpiration DateTime?
-  status             InventoryStatus @default(AVAILABLE)
+  status             InventoryStatus       @default(AVAILABLE)
   qrCode             String?
   barcode            String?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
   deletedAt          DateTime?
-
-  department  Department?           @relation(fields: [departmentId], references: [id])
-  assignments InventoryAssignment[]
-  documents   InventoryDocument[]
+  assignments        InventoryAssignment[]
+  documents          InventoryDocument[]
+  department         Department?           @relation(fields: [departmentId], references: [id])
 
   @@index([propertyNumber])
   @@index([departmentId])
@@ -128,65 +121,60 @@ model InventoryItem {
 }
 
 model InventoryAssignment {
-  id                    String    @id @default(cuid())
+  id                    String        @id @default(cuid())
   inventoryItemId       String
   userId                String
   assignedBy            String
-  assignedAt            DateTime  @default(now())
+  assignedAt            DateTime      @default(now())
   returnedAt            DateTime?
   condition             String?
   notes                 String?
   acknowledgmentReceipt String?
-
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventoryItem         InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([inventoryItemId])
   @@index([userId])
 }
 
 model InventoryDocument {
-  id              String   @id @default(cuid())
+  id              String        @id @default(cuid())
   inventoryItemId String
   fileName        String
   fileUrl         String
   fileType        String
   fileSize        Int
   uploadedBy      String
-  createdAt       DateTime @default(now())
-
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
 
   @@index([inventoryItemId])
 }
 
 model ConsumableItem {
-  id             String    @id @default(cuid())
-  propertyNumber String    @unique
-  itemName       String
-  category       String
-  description    String?
-  quantity       Int       @default(0)
-  unitType       String
-  batchNumber    String?
-  expirationDate DateTime?
-  reorderLevel   Int       @default(10)
-  criticalLevel  Int       @default(5)
-  departmentId   String?
-  fundCode       String?
-  fundSource     String?
-  supplier       String?
-  dateReceived   DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
-
-  department      Department?               @relation(fields: [departmentId], references: [id])
-  stockMovements  StockMovement[]
-  requests        ConsumableRequest[]
+  id              String                    @id @default(cuid())
+  propertyNumber  String                    @unique
+  itemName        String
+  category        String
+  description     String?
+  quantity        Int                       @default(0)
+  unitType        String
+  batchNumber     String?
+  expirationDate  DateTime?
+  reorderLevel    Int                       @default(10)
+  criticalLevel   Int                       @default(5)
+  departmentId    String?
+  fundCode        String?
+  fundSource      String?
+  supplier        String?
+  dateReceived    DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  deletedAt       DateTime?
   batches         ConsumableBatch[]
-
-  // ✅ NEW: back-relation to user inventories
+  department      Department?               @relation(fields: [departmentId], references: [id])
+  requests        ConsumableRequest[]
+  stockMovements  StockMovement[]
   userInventories UserConsumableInventory[]
 
   @@index([propertyNumber])
@@ -196,19 +184,18 @@ model ConsumableItem {
 }
 
 model ConsumableBatch {
-  id               String      @id @default(cuid())
+  id               String          @id @default(cuid())
   consumableItemId String
   batchNumber      String
-  quantity         Int         @default(0)
+  quantity         Int             @default(0)
   expirationDate   DateTime?
-  receivedAt       DateTime    @default(now())
-  status           BatchStatus @default(ACTIVE)
+  receivedAt       DateTime        @default(now())
+  status           BatchStatus     @default(ACTIVE)
   notes            String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-
-  consumableItem ConsumableItem  @relation(fields: [consumableItemId], references: [id], onDelete: Cascade)
-  stockMovements StockMovement[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  consumableItem   ConsumableItem  @relation(fields: [consumableItemId], references: [id], onDelete: Cascade)
+  stockMovements   StockMovement[]
 
   @@index([consumableItemId])
   @@index([expirationDate])
@@ -216,7 +203,7 @@ model ConsumableBatch {
 }
 
 model StockMovement {
-  id                String          @id @default(cuid())
+  id                String           @id @default(cuid())
   consumableItemId  String
   consumableBatchId String?
   type              MovementType
@@ -226,11 +213,10 @@ model StockMovement {
   reason            String?
   referenceNumber   String?
   performedBy       String
-  createdAt         DateTime        @default(now())
-
-  consumableItem  ConsumableItem   @relation(fields: [consumableItemId], references: [id], onDelete: Cascade)
-  consumableBatch ConsumableBatch? @relation(fields: [consumableBatchId], references: [id], onDelete: Cascade)
-  user            User             @relation(fields: [performedBy], references: [id])
+  createdAt         DateTime         @default(now())
+  consumableBatch   ConsumableBatch? @relation(fields: [consumableBatchId], references: [id], onDelete: Cascade)
+  consumableItem    ConsumableItem   @relation(fields: [consumableItemId], references: [id], onDelete: Cascade)
+  user              User             @relation(fields: [performedBy], references: [id])
 
   @@index([consumableItemId])
   @@index([consumableBatchId])
@@ -238,25 +224,24 @@ model StockMovement {
 }
 
 model ConsumableRequest {
-  id               String        @id @default(cuid())
-  requestNumber    String        @unique
+  id               String              @id @default(cuid())
+  requestNumber    String              @unique
   consumableItemId String
   requesterId      String
   quantity         Int
   purpose          String?
-  status           RequestStatus @default(PENDING)
-  priority         Priority      @default(NORMAL)
+  status           RequestStatus       @default(PENDING)
+  priority         Priority            @default(NORMAL)
   approvedBy       String?
   approvedAt       DateTime?
   rejectionReason  String?
   releasedAt       DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-
-  consumableItem ConsumableItem    @relation(fields: [consumableItemId], references: [id])
-  requester      User              @relation("CreatedRequests", fields: [requesterId], references: [id])
-  approver       User?             @relation("ApprovedRequests", fields: [approvedBy], references: [id])
-  attachments    RequestAttachment[]
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  approver         User?               @relation("ApprovedRequests", fields: [approvedBy], references: [id])
+  consumableItem   ConsumableItem      @relation(fields: [consumableItemId], references: [id])
+  requester        User                @relation("CreatedRequests", fields: [requesterId], references: [id])
+  attachments      RequestAttachment[]
 
   @@index([requesterId])
   @@index([status])
@@ -265,56 +250,48 @@ model ConsumableRequest {
 }
 
 model RequestAttachment {
-  id         String   @id @default(cuid())
+  id         String            @id @default(cuid())
   requestId  String
   fileName   String
   fileUrl    String
   fileType   String
   fileSize   Int
   uploadedBy String
-  createdAt  DateTime @default(now())
-
-  request ConsumableRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  createdAt  DateTime          @default(now())
+  request    ConsumableRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   @@index([requestId])
 }
 
-// ✅ NEW MODEL: Tracks consumable stock owned by each user
-// Created/incremented when a request is approved.
-// Decremented when user records a distribution/use/transfer.
 model UserConsumableInventory {
-  id               String   @id @default(cuid())
+  id               String             @id @default(cuid())
   userId           String
   consumableItemId String
-  quantity         Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  consumableItem ConsumableItem @relation(fields: [consumableItemId], references: [id], onDelete: Cascade)
-  distributions  UserDistribution[]
+  quantity         Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  consumableItem   ConsumableItem     @relation(fields: [consumableItemId], references: [id], onDelete: Cascade)
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  distributions    UserDistribution[]
 
   @@unique([userId, consumableItemId])
   @@index([userId])
   @@index([consumableItemId])
 }
 
-// ✅ NEW MODEL: Records every time a user distributes, uses, or transfers
-// an item out of their personal consumable inventory.
 model UserDistribution {
-  id            String               @id @default(cuid())
-  inventoryId   String               // → UserConsumableInventory.id
-  performedBy   String               // → User.id
+  id            String                  @id @default(cuid())
+  inventoryId   String
+  performedBy   String
   quantity      Int
   type          UserDistributionType
   recipientName String?
   recipientDept String?
   location      String?
   notes         String?
-  createdAt     DateTime             @default(now())
-
-  inventory UserConsumableInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  user      User                    @relation(fields: [performedBy], references: [id])
+  createdAt     DateTime                @default(now())
+  inventory     UserConsumableInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  user          User                    @relation(fields: [performedBy], references: [id])
 
   @@index([inventoryId])
   @@index([performedBy])
@@ -330,8 +307,7 @@ model Notification {
   isRead      Boolean          @default(false)
   referenceId String?
   createdAt   DateTime         @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isRead])
@@ -349,8 +325,7 @@ model AuditLog {
   ipAddress  String?
   userAgent  String?
   createdAt  DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([entityType])
@@ -358,15 +333,12 @@ model AuditLog {
   @@index([createdAt])
 }
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
-
 enum BatchStatus {
   ACTIVE
   DEPLETED
   EXPIRED
 }
 
-// ✅ NEW ENUM
 enum UserDistributionType {
   DISTRIBUTED
   USED

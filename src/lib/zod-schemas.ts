@@ -38,21 +38,24 @@ export const inventoryItemSchema = z.object({
 });
 
 export const consumableItemSchema = z.object({
-  propertyNumber: z.string().min(1, "Property number is required"),
+  // optional: API auto-generates if blank
+  propertyNumber: z.string().optional(),
   itemName: z.string().min(1, "Item name is required"),
   category: z.string().min(1, "Category is required"),
   description: z.string().optional(),
   quantity: z.number().min(0, "Quantity cannot be negative"),
   unitType: z.string().min(1, "Unit type is required"),
   batchNumber: z.string().optional(),
-  expirationDate: z.string().optional(),
+  // accept string OR Date (valueAsDate sends a Date object)
+  expirationDate: z.union([z.string(), z.date()]).optional().nullable(),
   reorderLevel: z.number().min(0).default(10),
   criticalLevel: z.number().min(0).default(5),
-  departmentId: z.string().optional(),
+  departmentId: z.string().optional().nullable(),
   fundCode: z.string().optional(),
   fundSource: z.string().optional(),
   supplier: z.string().optional(),
-  dateReceived: z.string().optional(),
+  // accept string OR Date
+  dateReceived: z.union([z.string(), z.date()]).optional().nullable(),
 });
 
 export const stockMovementSchema = z.object({

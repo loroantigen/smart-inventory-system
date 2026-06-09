@@ -7,6 +7,9 @@ import { prisma } from "@/lib/prisma";
 import { consumableItemSchema } from "@/lib/zod-schemas";
 import { generatePropertyNumber, getDaysUntilExpiration } from "@/lib/utils";
 
+// Serialize Prisma records (DateTime, Decimal, etc.) to plain JSON-safe objects
+const toAuditJson = (data: any) => JSON.parse(JSON.stringify(data));
+
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -56,7 +59,8 @@ export async function GET(req: Request) {
       const isLowStock = item.quantity <= item.reorderLevel;
       const isCritical = item.quantity <= item.criticalLevel;
       const isExpired = daysUntilExpiry !== null && daysUntilExpiry < 0;
-      const isNearExpiry = daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
+      const isNearExpiry =
+        daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
 
       return {
         ...item,
@@ -72,12 +76,8 @@ export async function GET(req: Request) {
     });
 
     let filteredItems = formattedItems;
-    if (nearExpiry) {
-      filteredItems = formattedItems.filter((i) => i.isNearExpiry);
-    }
-    if (expired) {
-      filteredItems = formattedItems.filter((i) => i.isExpired);
-    }
+    if (nearExpiry) filteredItems = formattedItems.filter((i) => i.isNearExpiry);
+    if (expired) filteredItems = formattedItems.filter((i) => i.isExpired);
 
     return NextResponse.json({
       items: filteredItems,
@@ -100,16 +100,29 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
+
+    // FIX 1: Convert empty departmentId string to undefined so Prisma
+    // doesn't attempt a FK lookup on an empty string (causes constraint error)
+    if (body.departmentId === "") body.departmentId = undefined;
+
     const validated = consumableItemSchema.parse(body);
 
-    const propertyNumber = validated.propertyNumber || generatePropertyNumber("CON");
+    const propertyNumber =
+      validated.propertyNumber || generatePropertyNumber("CON");
 
     const item = await prisma.consumableItem.create({
       data: {
         ...validated,
         propertyNumber,
-        expirationDate: validated.expirationDate ? new Date(validated.expirationDate) : null,
-        dateReceived: validated.dateReceived ? new Date(validated.dateReceived) : null,
+        // Ensure dates are real Date objects even if the client sent ISO strings
+        expirationDate: validated.expirationDate
+          ? new Date(validated.expirationDate)
+          : null,
+        dateReceived: validated.dateReceived
+          ? new Date(validated.dateReceived)
+          : null,
+        // Ensure empty departmentId doesn't reach Prisma as an empty string
+        departmentId: validated.departmentId || null,
       },
     });
 
@@ -127,21 +140,33 @@ export async function POST(req: Request) {
       });
     }
 
+    // FIX 2: Serialize the Prisma record with toAuditJson before storing in
+    // the Json column — raw Prisma objects contain DateTime instances that
+    // Prisma cannot store in a Json field, causing a 500 on audit log creation
     await prisma.auditLog.create({
       data: {
         userId: session.user.id,
         action: "CONSUMABLE_CREATED",
         entityType: "CONSUMABLE_ITEM",
         entityId: item.id,
-        newValues: item,
+        newValues: toAuditJson(item),
       },
     });
 
     return NextResponse.json(item, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Consumable create error:", error);
+
+    // Surface Zod validation errors clearly instead of a generic 500
+    if (error.name === "ZodError") {
+      return NextResponse.json(
+        { error: "Validation failed", issues: error.errors },
+        { status: 422 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to create consumable item" },
+      { error: error.message || "Failed to create consumable item" },
       { status: 500 }
     );
   }

@@ -3,14 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { consumableItemSchema } from "@/lib/zod-schemas";
-import {
-  Boxes,
-  ArrowLeft,
-  Save,
-} from "lucide-react";
+import { Boxes, ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,14 +32,24 @@ const categories = [
   "Other",
 ];
 
-// Fixed: Removed the extra '<'
 type ConsumableForm = z.infer<typeof consumableItemSchema>;
 
 export default function NewConsumablePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fixed: Removed the extra '<'
+  // FIX 1: Fetch real departments from DB (old code had fake hardcoded IDs)
+  const { data: departments = [], isLoading: loadingDepts } = useQuery({
+    queryKey: ["departments"],
+    queryFn: async (): Promise<{ id: string; name: string }[]> => {
+      const res = await fetch("/api/departments");
+      if (!res.ok) throw new Error("Failed to fetch departments");
+      const json = await res.json();
+      // Handle both shapes: plain array OR { departments: [...] } wrapper
+      return Array.isArray(json) ? json : (json.departments ?? json.data ?? []);
+    },
+  });
+
   const {
     register,
     handleSubmit,
@@ -70,7 +77,8 @@ export default function NewConsumablePage() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || "Failed to create item");
+        console.error("API error:", error); // FIX 2: log full error for debugging
+        throw new Error(error.error || error.message || "Failed to create item");
       }
 
       toast.success("Consumable item created successfully");
@@ -99,6 +107,7 @@ export default function NewConsumablePage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -206,11 +215,22 @@ export default function NewConsumablePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="batchNumber">Batch Number</Label>
-                <Input id="batchNumber" placeholder="Batch number..." {...register("batchNumber")} />
+                <Input
+                  id="batchNumber"
+                  placeholder="Batch number..."
+                  {...register("batchNumber")}
+                />
               </div>
-              <div className="space-y-2">
+              {/* FIX 3: valueAsDate so Prisma receives DateTime, not a string */}
+              {/* FIX 4: relative z-0 so the date picker overlay can't block the Save button */}
+              <div className="space-y-2 relative z-0">
                 <Label htmlFor="expirationDate">Expiration Date</Label>
-                <Input id="expirationDate" type="date" {...register("expirationDate")} />
+                <Input
+                  id="expirationDate"
+                  type="date"
+                  className="relative z-0"
+                  {...register("expirationDate", { valueAsDate: true })}
+                />
               </div>
             </CardContent>
           </Card>
@@ -235,29 +255,45 @@ export default function NewConsumablePage() {
                 <Label htmlFor="supplier">Supplier</Label>
                 <Input id="supplier" placeholder="Supplier name..." {...register("supplier")} />
               </div>
+
+              {/* FIX 1 cont: Real department IDs from DB, not fake "dept1/dept2" */}
               <div className="space-y-2">
                 <Label htmlFor="departmentId">Department</Label>
                 <Select onValueChange={(v) => setValue("departmentId", v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={loadingDepts ? "Loading..." : "Select department"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dept1">IT Department</SelectItem>
-                    <SelectItem value="dept2">HR Department</SelectItem>
-                    <SelectItem value="dept3">Finance</SelectItem>
-                    <SelectItem value="dept4">Operations</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                    {!loadingDepts && departments.length === 0 && (
+                      <SelectItem value="_none" disabled>
+                        No departments found
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+
+              {/* FIX 3 + 4 applied to dateReceived as well */}
+              <div className="space-y-2 relative z-0">
                 <Label htmlFor="dateReceived">Date Received</Label>
-                <Input id="dateReceived" type="date" {...register("dateReceived")} />
+                <Input
+                  id="dateReceived"
+                  type="date"
+                  className="relative z-0"
+                  {...register("dateReceived", { valueAsDate: true })}
+                />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="flex justify-end gap-4">
+        {/* FIX 4 cont: z-10 ensures Save button is above any date picker overlays */}
+        <div className="flex justify-end gap-4 relative z-10">
           <Link href="/consumables">
             <Button variant="outline" type="button">Cancel</Button>
           </Link>
